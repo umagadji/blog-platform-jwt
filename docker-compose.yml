@@ -1,0 +1,38 @@
+version: '3.8' # Версия Docker Compose
+
+services:
+  db: # Сервис для базы данных PostgreSQL
+    image: postgres:15 # Используемый образ PostgreSQL (но тут ошибка, правильное имя — postgres:15)
+    container_name: blog-db # Название контейнера
+    restart: always # Автоматически перезапускать контейнер в случае сбоя
+    environment: # Переменные окружения для настройки базы данных
+      POSTGRES_DB: blog_platform # Имя базы данных
+      POSTGRES_USER: postgres # Имя пользователя БД
+      POSTGRES_PASSWORD: admin # Пароль пользователя
+    ports:
+      - "5432:5432" # Пробрасываем порт, чтобы можно было подключаться к БД с хоста
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Храним данные БД на хосте, чтобы не терять их при перезапуске контейнера
+    networks:
+      - blog_network
+
+  app: # Сервис для Spring Boot приложения
+    build: . # Собираем образ из текущей директории (используется Dockerfile)
+    container_name: blog-app # Название контейнера
+    restart: always # Автоматически перезапускать контейнер в случае сбоя
+    depends_on:
+      - db # Гарантируем, что БД запустится раньше приложения
+    ports:
+      - "8080:8080" # Пробрасываем порт, чтобы приложение было доступно на хосте
+    environment: # Передаем переменные окружения для подключения к БД
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/blog_platform # URL подключения к базе
+      SPRING_DATASOURCE_USERNAME: postgres # Логин для БД
+      SPRING_DATASOURCE_PASSWORD: admin # Пароль для БД
+    networks:
+      - blog_network # Подключаем контейнер к сети
+
+volumes:
+  postgres_data: # Определяем volume для хранения данных PostgreSQL
+
+networks:
+  blog_network: # Определяем сеть для взаимодействия контейнеров
